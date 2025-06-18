@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ランドマーククイズ</title>
+  <style>
+    #landmark { width: 300px; margin-bottom: 10px; }
+    #choices button { margin: 4px; }
+    #result { margin: 8px 0; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h3>このランドマークはどこの国？</h3>
+  <img id="landmark" src="" alt="ランドマーク"><br>
+  <div id="choices"></div>
+  <p id="result"></p>
+  <button id="next">次の問題</button>
+<script>
+const countries = [
+  { name: 'France', jp: 'フランス' },
+  { name: 'Egypt', jp: 'エジプト' },
+  { name: 'United States', jp: 'アメリカ' },
+  { name: 'Italy', jp: 'イタリア' },
+  { name: 'Australia', jp: 'オーストラリア' }
+];
+
+let currentCountry, correctIdx, score = 0;
+
+async function setQuestion() {
+  correctIdx = Math.floor(Math.random() * countries.length);
+  currentCountry = countries[correctIdx];
+  document.getElementById('result').textContent = '画像生成中...';
+
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ country: currentCountry.name })
+  });
+  const data = await res.json();
+
+  document.getElementById('landmark').src = data.imageUrl;
+  document.getElementById('result').textContent = '';
+
+  // 選択肢をランダム並び
+  const shuffled = countries.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const choicesDiv = document.getElementById('choices');
+  choicesDiv.innerHTML = '';
+  shuffled.slice(0, 4).forEach(country => {
+    const btn = document.createElement('button');
+    btn.textContent = country.jp;
+    btn.onclick = () => checkAnswer(country);
+    choicesDiv.appendChild(btn);
+  });
+}
+
+function checkAnswer(selected) {
+  if (selected.name === currentCountry.name) {
+    document.getElementById('result').textContent = '正解！';
+    score++;
+  } else {
+    document.getElementById('result').textContent = '不正解！ 答え: ' + currentCountry.jp;
+  }
+  Array.from(document.getElementById('choices').children).forEach(btn => btn.disabled = true);
+}
+
+document.getElementById('next').onclick = () => {
+  setQuestion();
+};
+
+setQuestion();
+</script>
+</body>
+</html>
